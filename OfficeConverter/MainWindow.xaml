@@ -5,13 +5,16 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:OfficeConverter"
         mc:Ignorable="d"
-        Title="MainWindow" Height="866" Width="1099" Background="#FF1A1A1A">
+        Title="OfficeConverter 1.0" Height="715" Width="1045" Background="#FF1A1A1A">
     <Grid Background="#FF424242">
         <Grid.ColumnDefinitions>
 
+            <ColumnDefinition Width="356*"/>
+            <ColumnDefinition Width="689*"/>
+
         </Grid.ColumnDefinitions>
         <Grid Margin="0,70,0,0" Background="#FF1A1A1A" Grid.ColumnSpan="2">
-            <GroupBox x:Name="grpFolders" Header="grpFolders" Margin="10,10,395,0" RenderTransformOrigin="0.5,0.5" Height="276" VerticalAlignment="Top">
+            <GroupBox x:Name="grpFolders" Header="grpFolders" Margin="10,10,0,0" RenderTransformOrigin="0.5,0.5" Height="276" VerticalAlignment="Top" HorizontalAlignment="Left" Width="694">
                 <GroupBox.RenderTransform>
                     <TransformGroup>
                         <ScaleTransform/>
@@ -24,37 +27,37 @@
                     <Label x:Name="lblSouceFolder" Content="lblSource" VerticalAlignment="Top"/>
                     <TextBox x:Name="txtSourceFolder" HorizontalAlignment="Left" Margin="0,33,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="540" Text="D:\testconvert"/>
                     <Button x:Name="btnSourceFolder" Content="btnSource" Margin="545,33,0,0" VerticalAlignment="Top" Click="btnSourceFolder_Click"/>
-                    <CheckBox x:Name="chkSubfolders" Content="chkSubfolders" HorizontalAlignment="Left" Margin="0,68,0,0" Click="chkSubfolders_Clicked" VerticalAlignment="Top" Checked="chkSubfolders_Checked"/>
-                    <CheckBox x:Name="chkReplace" Content="chkReplace" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,103,0,0" Click="chkReplace_Clicked" RenderTransformOrigin="0.85,0.268" Checked="chkReplace_Checked"/>
+                    <CheckBox x:Name="chkSubfolders" Content="chkSubfolders" HorizontalAlignment="Left" Margin="0,68,0,0" Click="chkSubfolders_Clicked" VerticalAlignment="Top"/>
+                    <CheckBox x:Name="chkReplace" Content="chkReplace" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,103,0,0" Click="chkReplace_Clicked" RenderTransformOrigin="0.85,0.268"/>
                     <Label x:Name="lblDestFolder" Content="lblDest" VerticalAlignment="Top" Margin="0,138,0,0"/>
-                    <TextBox x:Name="txtDestFolder" HorizontalAlignment="Left" Margin="0,171,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="540" TextChanged="txtDestFolder_TextChanged" Text="D:\testexport"/>
+                    <TextBox x:Name="txtDestFolder" HorizontalAlignment="Left" Margin="0,171,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="540" />
                     <Button x:Name="btnDestFolder" Content="btnDest" Margin="545,171,0,0" VerticalAlignment="Top" Click="btnDestFolder_Click"/>
                 </Grid>
             </GroupBox>
-            <GroupBox x:Name="grpFiles" Header="grpFiles" Margin="709,10,90,0" Height="147" VerticalAlignment="Top">
+            <GroupBox x:Name="grpFiles" Header="grpFiles" Margin="709,10,0,0" Height="147" VerticalAlignment="Top" HorizontalAlignment="Left" Width="300">
                 <Grid>
                     <CheckBox x:Name="chkWord" Content="Word .doc" HorizontalAlignment="Left" Margin="0,10,0,0" VerticalAlignment="Top"/>
                     <CheckBox x:Name="chkExcel" Content="Excel .xls" HorizontalAlignment="Left" Margin="0,45,0,0" VerticalAlignment="Top"/>
                     <CheckBox x:Name="chkPowerpoint" Content="PowerPoint .ppt" HorizontalAlignment="Left" Margin="0,80,0,0" VerticalAlignment="Top"/>
                 </Grid>
             </GroupBox>
-            <GroupBox x:Name="grpSourceFiles" Header="grpSourceFiles" Margin="10,291,592,0" Height="259" VerticalAlignment="Top">
+            <GroupBox x:Name="grpSourceFiles" Header="grpSourceFiles" Margin="10,291,0,0" Height="259" VerticalAlignment="Top" HorizontalAlignment="Left" Width="497">
                 <Grid>
                     <ListBox x:Name="lstSourceFiles" ItemsSource="{Binding combinedFiles}"/>
                 </Grid>
             </GroupBox>
-            <GroupBox x:Name="grpDestFiles" Header="grpDestFiles" Margin="512,291,90,0" Height="259" VerticalAlignment="Top">
+            <GroupBox x:Name="grpDestFiles" Header="grpDestFiles" Margin="512,291,0,0" Height="259" VerticalAlignment="Top" HorizontalAlignment="Left" Width="497">
                 <Grid>
                     <ListBox x:Name="lstDestFiles" ItemsSource="{Binding convertedFiles}" />
                 </Grid>
             </GroupBox>
-            <Button x:Name="btnConvert" Content="Button" HorizontalAlignment="Left" Margin="835,187,0,0" VerticalAlignment="Top" Width="174" Height="66" Click="btnConvert_Click"/>
+            <Button x:Name="btnConvert" Content="Button" HorizontalAlignment="Left" Margin="835,162,0,0" VerticalAlignment="Top" Width="174" Height="66" Click="btnConvert_Click"/>
             <Label x:Name="lblState" Content="lblState" HorizontalAlignment="Left" Margin="709,258,0,0" VerticalAlignment="Top" Width="300" Height="28"/>
             <Button x:Name="btnExport" Content="btnExport" HorizontalAlignment="Left" Height="33" Margin="915,555,0,0" VerticalAlignment="Top" Width="94" Click="btnExport_Click"/>
             <Button x:Name="btnDelete" Content="btnDelete" HorizontalAlignment="Left" Margin="793,555,0,0" VerticalAlignment="Top" Width="117" Height="33" Click="btnDelete_Click"/>
 
         </Grid>
         <Label Content="Office Document Converter" HorizontalAlignment="Left" Margin="10,16,0,0" VerticalAlignment="Top" Width="277" FontSize="20"/>
-        <ComboBox x:Name="cmbLang" HorizontalAlignment="Left" Margin="826,33,0,0" VerticalAlignment="Top" Width="120" SelectionChanged="cmbLang_SelectionChanged"/>
+        <ComboBox x:Name="cmbLang" HorizontalAlignment="Left" Margin="470,33,0,0" VerticalAlignment="Top" Width="120" SelectionChanged="cmbLang_SelectionChanged" Grid.Column="1"/>
     </Grid>
 </Window>

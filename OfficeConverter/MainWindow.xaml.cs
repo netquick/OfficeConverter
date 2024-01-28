@@ -1,20 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
-using System.Linq;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using Word = Microsoft.Office.Interop.Word;
-using Forms = System.Windows.Forms;
-using System.Threading.Tasks;
 using Excel = Microsoft.Office.Interop.Excel;
+using Forms = System.Windows.Forms;
 using PowerPoint = Microsoft.Office.Interop.PowerPoint;
-using System.Threading;
-using System.Windows.Media.TextFormatting;
-using System.Windows.Forms;
-using System.Runtime.InteropServices;
-using System.Diagnostics;
+using Word = Microsoft.Office.Interop.Word;
 
 namespace OfficeConverter
 {
@@ -23,13 +20,15 @@ namespace OfficeConverter
     /// </summary>
     public partial class MainWindow : Window
     {
-        //Definiere Background workder für die Konvertierung
+        //Definiere Background worker für die Konvertierung
         private BackgroundWorker backgroundWorker;
+        private CancellationTokenSource cancellationTokenSource;
 
+        //Definiter listen für die Anzeige im GUI
         List<string> combinedFiles = new List<string>();
         List<string> convertedFiles = new List<string>();
        
-
+        //Globalvariables
         bool doSubfolders = false;
         bool doReplace = false;
         bool doWord = false;
@@ -55,8 +54,11 @@ namespace OfficeConverter
             backgroundWorker.ProgressChanged += BackgroundWorker_ProgressChanged;
             backgroundWorker.RunWorkerCompleted += BackgroundWorker_RunWorkerCompleted;
             lblState.Content = "Ready";
-
+            cancellationTokenSource = new CancellationTokenSource();
         }
+
+
+        //Konvertier-Button
         private void btnConvert_Click(object sender, RoutedEventArgs e)
         {
             string folderPath = txtSourceFolder.Text;
@@ -87,42 +89,73 @@ namespace OfficeConverter
                 System.Windows.MessageBox.Show("Conversion is already in progress. Please wait for the current operation to finish.");
             }
         }
+
+        //Background Worker
         private async void BackgroundWorker_DoWork(object sender, DoWorkEventArgs e)
         {
-
             // Clear the list of converted files at the beginning of each conversion
             convertedFiles.Clear();
             string folderPath = e.Argument as string;
-            // Disable buttons during conversion
+
+            // Use Dispatcher.Invoke to access UI elements from the UI thread
             System.Windows.Application.Current.Dispatcher.Invoke(() =>
             {
+                // Check if txtDestFolder is empty and doReplace is false
+                if (string.IsNullOrWhiteSpace(txtDestFolder.Text) && !doReplace)
+                {
+                    // Show a warning message in a MessageBox
+                    System.Windows.MessageBox.Show("Destination folder is required when 'Replace files' is not selected.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+
+                    // Cancel the task
+                    e.Cancel = true;
+                    cancellationTokenSource.Cancel();
+
+                    return;
+                }
+
+                // Disable buttons during conversion
                 UpdateButtonStates(false);
+
+                // Initialize the CancellationTokenSource
+                cancellationTokenSource = new CancellationTokenSource();
             });
 
-            if (Directory.Exists(folderPath))
+            try
             {
-                try
-                {
-                    await SearchAndConvertDocs(folderPath);
-                }
-                catch (Exception ex)
-                {
-                    System.Windows.MessageBox.Show($"Error: {ex.Message}");
-                }
+                // Pass the cancellation token to SearchAndConvertDocs
+                await SearchAndConvertDocs(folderPath, cancellationTokenSource.Token);
             }
-            else
+            catch (OperationCanceledException)
             {
+                // Handle cancellation if needed
+            }
+            finally
+            {
+                // Use Dispatcher.Invoke to update UI elements from the UI thread
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
-                    System.Windows.MessageBox.Show("Ungültiger Ordnerpfad.");
+                    // Clear the UI-bound collection
+                    combinedFiles.Clear();
+                    // Add the contents of the combinedFiles list to the UI-bound collection
+                    combinedFiles.ForEach(file => lstSourceFiles.Items.Add(file));
+                    // Enable buttons after conversion completion
+                    UpdateButtonStates(true);
                 });
             }
+        }
+        private void BackgroundWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
+        {
+            // Update the UI with the progress value
+            //progressBar.Value = e.ProgressPercentage;
+        }
+        private void BackgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            // Perform any additional tasks after the background work is completed
             // Enable buttons after conversion completion
-            UpdateButtonStates(true);
+
         }
 
-
-        private async Task SearchAndConvertDocs(string folderPath)
+        private async Task SearchAndConvertDocs(string folderPath, CancellationToken cancellationToken)
         {
             string[] docFiles = null;
             string[] xlsFiles = null;
@@ -141,7 +174,6 @@ namespace OfficeConverter
                 pptFiles = Directory.GetFiles(folderPath, "*.ppt");
             }
 
-            //List<string> currentFolderFiles = new List<string>();
             // Check for null before adding to combinedFiles
             if (docFiles != null)
             {
@@ -158,20 +190,27 @@ namespace OfficeConverter
 
             Console.WriteLine($"Processing files in folder: {folderPath}");
 
-
-            // Create a copy of the collection to avoid modification during iteration
+            /// Create a copy of the collection to avoid modification during iteration
             List<string> snapshot = new List<string>(combinedFiles);
 
-            // Iterate over currentFolderFiles and start the conversion asynchronously
-            await Task.Run(async () =>
+            // Check for cancellation after creating the snapshot
+            cancellationToken.ThrowIfCancellationRequested();
+
+
+            try
             {
+                // Iterate over currentFolderFiles and start the conversion asynchronously
                 foreach (var docFile in snapshot)
                 {
+                    // Check for cancellation before each iteration
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     Console.WriteLine($"Converting file: {docFile}");
 
                     try
                     {
                         await ConvertFileToNewFormatAsync(docFile);
+
                         Console.WriteLine($"DisplayCombinedFiles called");
                         DisplayCombinedFiles();
                     }
@@ -183,7 +222,20 @@ namespace OfficeConverter
 
                     Console.WriteLine($"Task completed for file: {docFile}");
                 }
-            });
+
+                // Check for cancellation before displaying the completion message
+                cancellationToken.ThrowIfCancellationRequested();
+
+                // Clear the list of combined files if the operation was cancelled
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    combinedFiles.Clear();
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Handle cancellation if needed
+            }
 
             // Recursively process subfolders
             if (doSubfolders)
@@ -191,25 +243,25 @@ namespace OfficeConverter
                 string[] subfolders = Directory.GetDirectories(folderPath);
                 foreach (var subfolder in subfolders)
                 {
-                    // Await the completion of the recursive call
-                    await SearchAndConvertDocs(subfolder);
+                    // Pass the cancellation token to the recursive call
+                    await SearchAndConvertDocs(subfolder, cancellationToken);
+
+                    // Check for cancellation after processing each subfolder
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        // Stop processing if cancellation is requested
+                        break;
+                    }
                 }
             }
+
             System.Windows.Application.Current.Dispatcher.Invoke(() =>
             {
                 lblState.Content = "Background work completed!";
             });
+
             DisplayCombinedFiles();
-
         }
-
-
-
-
-
-
-
-
         private async Task ConvertFileToNewFormatAsync(string filePath)
         {
             await Task.Run(() =>
@@ -293,8 +345,6 @@ namespace OfficeConverter
                 KillProcess("EXCEL");
             }
         }
-
-
         private void ConvertPptToPptx(string pptFile, bool doSubfolders, bool doReplace)
         {
             PowerPoint.Application pptApp = new PowerPoint.Application();
@@ -335,7 +385,6 @@ namespace OfficeConverter
                 pptApp.Quit();
             }
         }
-
         private void ConvertDocToDocx(string docFile, bool doSubfolders, bool doReplace)
         {
             Word.Application wordApp = new Word.Application();
@@ -374,7 +423,6 @@ namespace OfficeConverter
                 KillProcess("WINWORD");
             }
         }
-
         private void KillProcess(string processName)
         {
             try
@@ -389,7 +437,6 @@ namespace OfficeConverter
                 Console.WriteLine($"Error terminating {processName} processes: {ex.Message}");
             }
         }
-
 
         // Helper method to determine the target folder path
         private string GetTargetFolderPath(bool doReplace, bool doSubfolders, string docFilePath)
@@ -429,15 +476,6 @@ namespace OfficeConverter
             return targetFolder;
         }
 
-
-
-
-
-
-
-
-
-
         private string GetRelativePath(string fullPath, string basePath)
         {
             Uri baseUri = new Uri(basePath + (basePath.EndsWith("\\") ? "" : "\\"));
@@ -455,26 +493,6 @@ namespace OfficeConverter
             return relativePath;
         }
 
-
-
-
-
-
-
-        private void BackgroundWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
-        {
-            // Update the UI with the progress value
-            //progressBar.Value = e.ProgressPercentage;
-        }
-
-        private void BackgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
-        {
-            // Perform any additional tasks after the background work is completed
-            // Enable buttons after conversion completion
- 
-        }
-
-
         private void setLangEN()
         {
             grpFolders.Header = "Folders";
@@ -490,7 +508,6 @@ namespace OfficeConverter
             btnConvert.Content = "Convert";
             btnDelete.Content = "Delete Files";
             btnExport.Content = "Export list";
-
         }
         private void setLangDE()
         {
@@ -508,14 +525,6 @@ namespace OfficeConverter
             btnDelete.Content = "Dateien löschen";
             btnExport.Content = "Liste exportieren";
         }
-
-        private void txtDestFolder_TextChanged(object sender, TextChangedEventArgs e)
-        {
-
-        }
-
-
-
         private void btnDestFolder_Click(object sender, RoutedEventArgs e)
         {
             using (var folderBrowserDialog = new Forms.FolderBrowserDialog())
@@ -528,7 +537,6 @@ namespace OfficeConverter
                 }
             }
         }
-
 
         private void DisplayCombinedFiles()
         {
@@ -543,10 +551,6 @@ namespace OfficeConverter
                 });
             }
         }
-
-
-
-
         private void btnSourceFolder_Click(object sender, RoutedEventArgs e)
         {
             using (var folderBrowserDialog = new Forms.FolderBrowserDialog())
@@ -603,16 +607,6 @@ namespace OfficeConverter
             else { doSubfolders = false; }
 
         }
-        private void chkSubfolders_Checked(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        private void chkReplace_Checked(object sender, RoutedEventArgs e)
-        {
-
-        }
-
         private void ExportConvertedFilesToFile(string filePath)
         {
             try
@@ -699,9 +693,5 @@ namespace OfficeConverter
                 btnDelete.IsEnabled = isEnabled;
             });
         }
-
-
-
-
     }
 }
