@@ -34,7 +34,7 @@ namespace OfficeConverter
         bool doWord = false;
         bool doExcel = false;
         bool doPPoint = false;
-
+        string errorFolderEmpty = "";
 
         public MainWindow()
         {
@@ -104,7 +104,7 @@ namespace OfficeConverter
                 if (string.IsNullOrWhiteSpace(txtDestFolder.Text) && !doReplace)
                 {
                     // Show a warning message in a MessageBox
-                    System.Windows.MessageBox.Show("Destination folder is required when 'Replace files' is not selected.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    System.Windows.MessageBox.Show(errorFolderEmpty, "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
 
                     // Cancel the task
                     e.Cancel = true;
@@ -508,6 +508,7 @@ namespace OfficeConverter
             btnConvert.Content = "Convert";
             btnDelete.Content = "Delete Files";
             btnExport.Content = "Export list";
+            errorFolderEmpty = "Destination folder is required when 'Replace files' is not selected.";    
         }
         private void setLangDE()
         {
@@ -524,6 +525,7 @@ namespace OfficeConverter
             btnConvert.Content = "Konvertieren";
             btnDelete.Content = "Dateien löschen";
             btnExport.Content = "Liste exportieren";
+            errorFolderEmpty = "Zielordner darf nicht leer sein, wenn 'Ersetze Dateien' nicht gewählt wurde.";
         }
         private void btnDestFolder_Click(object sender, RoutedEventArgs e)
         {
