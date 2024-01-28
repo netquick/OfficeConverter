@@ -6,9 +6,6 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OfficeConverter", "OfficeConverter\OfficeConverter.csproj", "{6E77662E-82C3-4913-8964-5A452B229F78}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Projektmappenelemente", "Projektmappenelemente", "{D66D2D0C-17EE-4008-BB58-DDD6EB016AAB}"
-	ProjectSection(SolutionItems) = preProject
-		OfficeConverter\OfficeConverter.exe = OfficeConverter\OfficeConverter.exe
-	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
