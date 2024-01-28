@@ -25,7 +25,7 @@
                 </GroupBox.RenderTransform>
                 <Grid>
                     <Label x:Name="lblSouceFolder" Content="lblSource" VerticalAlignment="Top"/>
-                    <TextBox x:Name="txtSourceFolder" HorizontalAlignment="Left" Margin="0,33,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="540" Text="D:\testconvert"/>
+                    <TextBox x:Name="txtSourceFolder" HorizontalAlignment="Left" Margin="0,33,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="540"/>
                     <Button x:Name="btnSourceFolder" Content="btnSource" Margin="545,33,0,0" VerticalAlignment="Top" Click="btnSourceFolder_Click"/>
                     <CheckBox x:Name="chkSubfolders" Content="chkSubfolders" HorizontalAlignment="Left" Margin="0,68,0,0" Click="chkSubfolders_Clicked" VerticalAlignment="Top"/>
                     <CheckBox x:Name="chkReplace" Content="chkReplace" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,103,0,0" Click="chkReplace_Clicked" RenderTransformOrigin="0.85,0.268"/>
