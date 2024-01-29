@@ -348,13 +348,12 @@ namespace OfficeConverter
         private void ConvertPptToPptx(string pptFile, bool doSubfolders, bool doReplace)
         {
             PowerPoint.Application pptApp = new PowerPoint.Application();
-            pptApp.DisplayAlerts = PowerPoint.PpAlertLevel.ppAlertsNone;
-
-            // Set PowerPoint application visibility to false
-            pptApp.Visible = Microsoft.Office.Core.MsoTriState.msoFalse;
 
             try
             {
+                //pptApp = new PowerPoint.Application();
+                pptApp.DisplayAlerts = PowerPoint.PpAlertLevel.ppAlertsNone;
+
                 PowerPoint.Presentation presentation = pptApp.Presentations.Open(pptFile);
 
                 string targetFolderPath = "";
@@ -374,17 +373,29 @@ namespace OfficeConverter
                 // Construct the new path for the .pptx file
                 string newPptxPath = Path.Combine(targetFolderPath, Path.ChangeExtension(Path.GetFileName(pptFile), ".pptx"));
                 presentation.SaveAs(newPptxPath, PowerPoint.PpSaveAsFileType.ppSaveAsOpenXMLPresentation);
+
+                // Close the presentation without saving changes
                 presentation.Close();
+
+                // Ensure PowerPoint is completely closed
+                Marshal.ReleaseComObject(presentation);
+                presentation = null;
+
             }
             finally
             {
-                // Set PowerPoint application visibility back to true before quitting
-                pptApp.Visible = Microsoft.Office.Core.MsoTriState.msoTrue;
-
                 // Quit PowerPoint
-                pptApp.Quit();
+                if (pptApp != null)
+                {
+                    pptApp.Quit();
+                    Marshal.ReleaseComObject(pptApp);
+                    pptApp = null;
+                }
             }
         }
+
+
+
         private void ConvertDocToDocx(string docFile, bool doSubfolders, bool doReplace)
         {
             Word.Application wordApp = new Word.Application();
