@@ -34,6 +34,7 @@ namespace OfficeConverter
         bool doWord = false;
         bool doExcel = false;
         bool doPPoint = false;
+        bool doWordTmpl = false;
         string errorFolderEmpty = "";
 
         public MainWindow()
@@ -76,6 +77,7 @@ namespace OfficeConverter
             doWord = (bool)chkWord.IsChecked;
             doExcel = (bool)chkExcel.IsChecked;
             doPPoint = (bool)chkPowerpoint.IsChecked;
+            doWordTmpl = (bool)chkWordTmpl.IsChecked; 
 
             // Check if the background worker is not already running
             if (!backgroundWorker.IsBusy)
@@ -160,6 +162,7 @@ namespace OfficeConverter
             string[] docFiles = null;
             string[] xlsFiles = null;
             string[] pptFiles = null;
+            string[] dotFiles = null; 
 
             if (doWord)
             {
@@ -172,6 +175,10 @@ namespace OfficeConverter
             if (doPPoint)
             {
                 pptFiles = Directory.GetFiles(folderPath, "*.ppt");
+            }
+            if (doWordTmpl)
+            {
+                dotFiles = Directory.GetFiles(folderPath, "*.dot");
             }
 
             // Check for null before adding to combinedFiles
@@ -186,6 +193,10 @@ namespace OfficeConverter
             if (pptFiles != null)
             {
                 combinedFiles.AddRange(pptFiles);
+            }
+            if (dotFiles != null)
+            {
+                combinedFiles.AddRange(dotFiles);
             }
 
             Console.WriteLine($"Processing files in folder: {folderPath}");
@@ -283,6 +294,9 @@ namespace OfficeConverter
 
                         case ".ppt":
                             ConvertPptToPptx(filePath, doSubfolders, doReplace);
+                            break;
+                        case ".dot":
+                            ConvertDocToDotx(filePath, doSubfolders, doReplace);
                             break;
 
                         default:
@@ -423,6 +437,45 @@ namespace OfficeConverter
                 KillProcess("WINWORD");
             }
         }
+        private void ConvertDocToDotx(string dotFile, bool doSubfolders, bool doReplace)
+        {
+            Word.Application wordApp = new Word.Application();
+            wordApp.DisplayAlerts = Word.WdAlertLevel.wdAlertsNone;
+
+            try
+            {
+                Word.Document doc = wordApp.Documents.Open(dotFile);
+
+                string targetFolderPath = "";
+
+                // Use Dispatcher.Invoke to execute code on the UI thread
+                Dispatcher.Invoke(() =>
+                {
+                    targetFolderPath = GetTargetFolderPath(doReplace, doSubfolders, dotFile);
+                });
+
+                // Ensure the target folder exists
+                if (!Directory.Exists(targetFolderPath))
+                {
+                    Directory.CreateDirectory(targetFolderPath);
+                }
+
+                // Construct the new path for the .dotx file
+                string newDotxPath = Path.Combine(targetFolderPath, Path.ChangeExtension(Path.GetFileName(dotFile), ".dotx"));
+                doc.SaveAs2(newDotxPath, Word.WdSaveFormat.wdFormatXMLTemplate);
+                doc.Close();
+            }
+            finally
+            {
+                // Quit Word and release resources
+                wordApp.Quit();
+                Marshal.ReleaseComObject(wordApp);
+
+                // Ensure Word processes are terminated
+                KillProcess("WINWORD");
+            }
+        }
+
         private void KillProcess(string processName)
         {
             try
