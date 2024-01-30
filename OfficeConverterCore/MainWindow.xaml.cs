@@ -1,8 +1,10 @@
-﻿using System;
+﻿using Microsoft.VisualBasic;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,6 +29,8 @@ namespace OfficeConverter
         //Definiter listen für die Anzeige im GUI
         List<string> combinedFiles = new List<string>();
         List<string> convertedFiles = new List<string>();
+
+        private List<string> logEntries = new List<string>();
        
         //Globalvariables
         bool doSubfolders = false;
@@ -40,7 +44,10 @@ namespace OfficeConverter
 
         public MainWindow()
         {
+
             InitializeComponent();
+            System.Diagnostics.PresentationTraceSources.SetTraceLevel(lstSourceFiles.ItemContainerGenerator, System.Diagnostics.PresentationTraceLevel.High);
+
             setLangEN();
             chkWord.IsChecked = true;
             chkExcel.IsChecked = true;      
@@ -55,23 +62,39 @@ namespace OfficeConverter
             backgroundWorker.DoWork += BackgroundWorker_DoWork;
             backgroundWorker.ProgressChanged += BackgroundWorker_ProgressChanged;
             backgroundWorker.RunWorkerCompleted += BackgroundWorker_RunWorkerCompleted;
-            lblState.Content = "Ready";
+            //lblState.Content = "Ready";
             cancellationTokenSource = new CancellationTokenSource();
         }
+        private void UpdateLog(string logEntry)
+        {
+            // Use Dispatcher.Invoke to update UI elements from the UI thread
+            System.Windows.Application.Current.Dispatcher.Invoke(() =>
+            {
+                logEntries.Add(logEntry);
+
+                // Update the ListBox with log entries
+                lstLog.ItemsSource = logEntries;
+                lstLog.Items.Refresh();
+
+                lstLog.ScrollIntoView(logEntry);
+                lstLog.HorizontalContentAlignment = HorizontalAlignment.Right;
+            });
+        }
+
 
 
         //Konvertier-Button
         private void btnConvert_Click(object sender, RoutedEventArgs e)
         {
             string folderPath = txtSourceFolder.Text;
-            if (cmbLang.SelectedIndex == 0)
-            {
-                lblState.Content = "Conversion in progress";
-            }
-            if (cmbLang.SelectedIndex == 1)
-            {
-                lblState.Content = "Konvertierung läuft";
-            }
+            //if (cmbLang.SelectedIndex == 0)
+            //{
+            //    lblState.Content = "Conversion in progress";
+            //}
+            //if (cmbLang.SelectedIndex == 1)
+            //{
+            //    lblState.Content = "Konvertierung läuft";
+            //}
             
             doSubfolders = (bool)chkSubfolders.IsChecked;
             doReplace = (bool)chkReplace.IsChecked;
@@ -80,7 +103,9 @@ namespace OfficeConverter
             doPPoint = (bool)chkPowerpoint.IsChecked;
             doWordTmpl = (bool)chkWordTmpl.IsChecked; 
             doExcelTmpl = (bool)chkExcelTmpl.IsChecked;
-
+            logEntries.Clear();
+            lstLog.Items.Refresh();
+            
             // Check if the background worker is not already running
             if (!backgroundWorker.IsBusy)
             {
@@ -144,6 +169,8 @@ namespace OfficeConverter
                     combinedFiles.ForEach(file => lstSourceFiles.Items.Add(file));
                     // Enable buttons after conversion completion
                     UpdateButtonStates(true);
+                    grpSourceFiles.Header = "Queue";
+                    MessageBox.Show("Done");
                 });
             }
         }
@@ -159,40 +186,58 @@ namespace OfficeConverter
 
         }
 
+
+        // Iterate over currentFolderFiles and start the conversion asynchronously
         private async Task SearchAndConvertDocs(string folderPath, CancellationToken cancellationToken)
         {
             string[] docFiles = null;
             string[] xlsFiles = null;
             string[] pptFiles = null;
-            string[] dotFiles = null; 
+            string[] dotFiles = null;
             string[] xltFiles = null;
 
+            int wordFilesCount = 0;
+            int excelFilesCount = 0;
+            int powerpointFilesCount = 0;
+            int wordTemplateFilesCount = 0;
+            int excelTemplateFilesCount = 0;
 
             if (doWord)
             {
                 docFiles = Directory.GetFiles(folderPath, "*.doc");
+                wordFilesCount = docFiles.Length;
+                UpdateLog($"Found {wordFilesCount} Word files (*.doc) in folder {folderPath}");
             }
             if (doExcel)
             {
                 xlsFiles = Directory.GetFiles(folderPath, "*.xls");
+                excelFilesCount = xlsFiles.Length;
+                UpdateLog($"Found {excelFilesCount} Excel files (*.xls) in folder {folderPath}");
             }
             if (doPPoint)
             {
                 pptFiles = Directory.GetFiles(folderPath, "*.ppt");
+                powerpointFilesCount = pptFiles.Length;
+                UpdateLog($"Found {powerpointFilesCount} PowerPoint files (*.ppt) in folder {folderPath}");
             }
             if (doWordTmpl)
             {
                 dotFiles = Directory.GetFiles(folderPath, "*.dot");
+                wordTemplateFilesCount = dotFiles.Length;
+                UpdateLog($"Found {wordTemplateFilesCount} Word template files (*.dot) in folder {folderPath}");
             }
             if (doExcelTmpl)
             {
-                dotFiles = Directory.GetFiles(folderPath, "*.dot");
+                xltFiles = Directory.GetFiles(folderPath, "*.xlt");
+                excelTemplateFilesCount = xltFiles.Length;
+                UpdateLog($"Found {excelTemplateFilesCount} Excel template files (*.xlt) in folder {folderPath}");
             }
 
             // Check for null before adding to combinedFiles
             if (docFiles != null)
             {
                 combinedFiles.AddRange(docFiles);
+
             }
             if (xlsFiles != null)
             {
@@ -210,7 +255,9 @@ namespace OfficeConverter
             {
                 combinedFiles.AddRange(xltFiles);
             }
+
             Console.WriteLine($"Processing files in folder: {folderPath}");
+            UpdateLog($"Processing files in folder: {folderPath}");
 
             /// Create a copy of the collection to avoid modification during iteration
             List<string> snapshot = new List<string>(combinedFiles);
@@ -253,6 +300,7 @@ namespace OfficeConverter
                 {
                     combinedFiles.Clear();
                 }
+
             }
             catch (OperationCanceledException)
             {
@@ -266,6 +314,12 @@ namespace OfficeConverter
                 foreach (var subfolder in subfolders)
                 {
                     // Pass the cancellation token to the recursive call
+                    System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        string headerName = Path.GetFileName(subfolder);
+                        grpSourceFiles.Header = headerName;
+
+                    });
                     await SearchAndConvertDocs(subfolder, cancellationToken);
 
                     // Check for cancellation after processing each subfolder
@@ -276,14 +330,16 @@ namespace OfficeConverter
                     }
                 }
             }
+            // Use Dispatcher.Invoke to update UI elements from the UI thread
+            //System.Windows.Application.Current.Dispatcher.Invoke(() =>
+            //{
+            //    lblState.Content = "Background work completed!";
+            //});
 
-            System.Windows.Application.Current.Dispatcher.Invoke(() =>
-            {
-                lblState.Content = "Background work completed!";
-            });
 
             DisplayCombinedFiles();
         }
+
         private async Task ConvertFileToNewFormatAsync(string filePath)
         {
             await Task.Run(() =>
@@ -318,23 +374,36 @@ namespace OfficeConverter
                             // Handle other file types or show an error message
                             Console.WriteLine($"Unsupported file type: {filePath}");
                             break;
+
                     }
+
+                    string logEntry = $"Converted file: {filePath}";
+                    Console.WriteLine(logEntry);
+                    UpdateLog(logEntry);
+
+                    System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        combinedFiles.Remove(filePath);
+                        if (!convertedFiles.Contains(filePath))
+                        {
+                            convertedFiles.Add(filePath);
+                            DisplayCombinedFiles();
+                        }
+                        DisplayCombinedFiles();
+                    });
+
                 }
                 catch (Exception ex)
                 {
                     // Handle exceptions during conversion
-                    Console.WriteLine($"Error converting {filePath}: {ex.Message}");
+                    string logEntry = $"Error converting {filePath}: {ex.Message}";
+                    Console.WriteLine(logEntry);
+                    UpdateLog(logEntry);
                 }
             });
 
             // Update UI on the main thread
-            System.Windows.Application.Current.Dispatcher.Invoke(() =>
-            {
-                combinedFiles.Remove(filePath);
-                convertedFiles.Add(filePath);
-
-                DisplayCombinedFiles();
-            });
+ 
         }
         private void ConvertXlsToXlsx(string xlsFile, bool doSubfolders, bool doReplace)
         {
@@ -363,6 +432,20 @@ namespace OfficeConverter
                 string newXlsxPath = Path.Combine(targetFolderPath, Path.ChangeExtension(Path.GetFileName(xlsFile), ".xlsx"));
                 workbook.SaveAs(newXlsxPath, Excel.XlFileFormat.xlOpenXMLWorkbook);
                 workbook.Close();
+            }
+            catch (Exception ex)
+            {
+                // Handle or log the exception
+                Console.WriteLine($"Error converting {xlsFile} to .dotx: {ex.Message}");
+                string logEntry = $"Error converting {xlsFile} to .dotx: {ex.Message}";
+                System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                {
+                    logEntries.Add(logEntry);
+                    // Update the ListBox with log entries
+                    lstLog.ItemsSource = logEntries;
+                    lstLog.Items.Refresh();
+                    lstLog.ScrollIntoView(logEntry);
+                });
             }
             finally
             {
@@ -403,6 +486,20 @@ namespace OfficeConverter
                     string newXltxPath = Path.Combine(targetFolderPath, Path.ChangeExtension(Path.GetFileName(xltFile), ".xltx"));
                     workbook.SaveAs(newXltxPath, Excel.XlFileFormat.xlOpenXMLTemplate);
                     workbook.Close();
+                }
+                catch (Exception ex)
+                {
+                    // Handle or log the exception
+                    Console.WriteLine($"Error converting {xltFile} to .dotx: {ex.Message}");
+                    string logEntry = $"Error converting {xltFile} to .dotx: {ex.Message}";
+                    System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        logEntries.Add(logEntry);
+                        // Update the ListBox with log entries
+                        lstLog.ItemsSource = logEntries;
+                        lstLog.Items.Refresh();
+                        lstLog.ScrollIntoView(logEntry);
+                    });
                 }
                 finally
                 {
@@ -462,6 +559,20 @@ namespace OfficeConverter
                 presentation.SaveAs(newPptxPath, PowerPoint.PpSaveAsFileType.ppSaveAsOpenXMLPresentation);
                 presentation.Close();
             }
+            catch (Exception ex)
+            {
+                // Handle or log the exception
+                Console.WriteLine($"Error converting {pptFile} to .dotx: {ex.Message}");
+                string logEntry = $"Error converting {pptFile} to .dotx: {ex.Message}";
+                System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                {
+                    logEntries.Add(logEntry);
+                    // Update the ListBox with log entries
+                    lstLog.ItemsSource = logEntries;
+                    lstLog.Items.Refresh();
+                    lstLog.ScrollIntoView(logEntry);
+                });
+            }
             finally
             {
                 // Set PowerPoint application visibility back to true before quitting
@@ -498,6 +609,20 @@ namespace OfficeConverter
                 string newDocxPath = Path.Combine(targetFolderPath, Path.ChangeExtension(Path.GetFileName(docFile), ".docx"));
                 doc.SaveAs2(newDocxPath, Word.WdSaveFormat.wdFormatXMLDocument);
                 doc.Close();
+            }
+            catch (Exception ex)
+            {
+                // Handle or log the exception
+                Console.WriteLine($"Error converting {docFile} to .dotx: {ex.Message}");
+                string logEntry = $"Error converting {docFile} to .dotx: {ex.Message}";
+                System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                {
+                    logEntries.Add(logEntry);
+                    // Update the ListBox with log entries
+                    lstLog.ItemsSource = logEntries;
+                    lstLog.Items.Refresh();
+                    lstLog.ScrollIntoView(logEntry);
+                });
             }
             finally
             {
@@ -536,6 +661,20 @@ namespace OfficeConverter
                 string newDotxPath = Path.Combine(targetFolderPath, Path.ChangeExtension(Path.GetFileName(dotFile), ".dotx"));
                 doc.SaveAs2(newDotxPath, Word.WdSaveFormat.wdFormatXMLTemplate);
                 doc.Close();
+            }
+            catch (Exception ex)
+            {
+                // Handle or log the exception
+                Console.WriteLine($"Error converting {dotFile} to .dotx: {ex.Message}");
+                string logEntry = $"Error converting {dotFile} to .dotx: {ex.Message}";
+                System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                {
+                    logEntries.Add(logEntry);
+                    // Update the ListBox with log entries
+                    lstLog.ItemsSource = logEntries;
+                    lstLog.Items.Refresh();
+                    lstLog.ScrollIntoView(logEntry);
+                });
             }
             finally
             {
@@ -591,10 +730,10 @@ namespace OfficeConverter
                     string sourceFolderName = Path.GetFileName(originalFolderPath);
 
                     // Remove the source folder name from the target path
-                    targetFolder = targetFolder.Replace(sourceFolderName, "").TrimEnd('\\');
+                    targetFolder = targetFolder.TrimEnd('\\');
 
                     // Replace the original folder path with the destination folder path
-                    targetFolder = targetFolder.Replace(originalFolderPath, txtDestFolder.Text.TrimEnd('\\'));
+                   //targetFolder = targetFolder.Replace(originalFolderPath, txtDestFolder.Text.TrimEnd('\\'));
                 }
             }
 
@@ -633,7 +772,8 @@ namespace OfficeConverter
             btnConvert.Content = "Convert";
             btnDelete.Content = "Delete Files";
             btnExport.Content = "Export list";
-            errorFolderEmpty = "Destination folder is required when 'Replace files' is not selected.";    
+            errorFolderEmpty = "Destination folder is required when 'Replace files' is not selected.";
+            btnExportLog.Content = "Save Log";
         }
         private void setLangDE()
         {
@@ -651,6 +791,7 @@ namespace OfficeConverter
             btnDelete.Content = "Dateien löschen";
             btnExport.Content = "Liste exportieren";
             errorFolderEmpty = "Zielordner darf nicht leer sein, wenn 'Ersetze Dateien' nicht gewählt wurde.";
+            btnExportLog.Content = "Log sichern";
         }
         private void btnDestFolder_Click(object sender, RoutedEventArgs e)
         {
@@ -748,6 +889,20 @@ namespace OfficeConverter
                 System.Windows.MessageBox.Show($"Error exporting converted files: {ex.Message}");
             }
         }
+        private void ExportConvertedLogFilesToFile(string filePath)
+        {
+            try
+            {
+                // Write the contents of the convertedFiles list to a text file
+                File.WriteAllLines(filePath, logEntries);
+
+                System.Windows.MessageBox.Show($"Export successful. File saved at: {filePath}");
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Error exporting converted files: {ex.Message}");
+            }
+        }
 
         private void btnExport_Click(object sender, RoutedEventArgs e)
         {
@@ -764,7 +919,21 @@ namespace OfficeConverter
                 ExportConvertedFilesToFile(saveFileDialog.FileName);
             }
         }
+        private void btnExportLog_Click(object sender, RoutedEventArgs e)
+        {
+            // Use a SaveFileDialog to let the user choose the export file location
+            var saveFileDialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Filter = "Text Files (*.txt)|*.txt|All Files (*.*)|*.*",
+                DefaultExt = "txt"
+            };
 
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                // Call the ExportConvertedFilesToFile method with the selected file path
+                ExportConvertedLogFilesToFile(saveFileDialog.FileName);
+            }
+        }
         private async void DeleteConvertedFilesAsync()
         {
             // Show a confirmation dialog
