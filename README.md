@@ -1,5 +1,5 @@
 OfficeConverter
-Converts Office Documents in '97-2003 Format (.doc, .xls, .ppt) to new Format (.docx, .xlsx, .pptx) using Microsoft interop libraries.
+Converts Office Documents in '97-2003 Format (.doc, .xls, .ppt, .dot, .xlt) to new Format (.docx, .xlsx, .pptx, .dotx, .xltx) using Microsoft interop libraries.
 
 
 Developed in Visual Studio Community Edition 2022 with .NET 6
