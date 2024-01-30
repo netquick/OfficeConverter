@@ -29,12 +29,13 @@
                     <Button x:Name="btnDestFolder" Content="btnDest" Margin="545,171,0,0" VerticalAlignment="Top" Click="btnDestFolder_Click"/>
                 </Grid>
             </GroupBox>
-            <GroupBox x:Name="grpFiles" Header="grpFiles" Margin="709,10,0,0" Height="182" VerticalAlignment="Top" HorizontalAlignment="Left" Width="300">
+            <GroupBox x:Name="grpFiles" Header="grpFiles" Margin="709,10,0,0" Height="243" VerticalAlignment="Top" HorizontalAlignment="Left" Width="300">
                 <Grid>
                     <CheckBox x:Name="chkWord" Content="Word .doc" HorizontalAlignment="Left" Margin="0,10,0,0" VerticalAlignment="Top"/>
                     <CheckBox x:Name="chkExcel" Content="Excel .xls" HorizontalAlignment="Left" Margin="0,45,0,0" VerticalAlignment="Top"/>
                     <CheckBox x:Name="chkPowerpoint" Content="PowerPoint .ppt" HorizontalAlignment="Left" Margin="0,80,0,0" VerticalAlignment="Top"/>
                     <CheckBox x:Name="chkWordTmpl" Content="Wordtemplates .dot" HorizontalAlignment="Left" Margin="0,115,0,0" VerticalAlignment="Top"/>
+                    <CheckBox x:Name="chkExcelTmpl" Content="Exceltemplates .xlt" HorizontalAlignment="Left" Margin="0,150,0,0" VerticalAlignment="Top"/>
                 </Grid>
             </GroupBox>
             <GroupBox x:Name="grpSourceFiles" Header="grpSourceFiles" Margin="10,291,0,0" Height="259" VerticalAlignment="Top" HorizontalAlignment="Left" Width="497">
@@ -47,7 +48,7 @@
                     <ListBox x:Name="lstDestFiles" ItemsSource="{Binding convertedFiles}" />
                 </Grid>
             </GroupBox>
-            <Button x:Name="btnConvert" Content="Button" HorizontalAlignment="Left" Margin="10,577,0,0" VerticalAlignment="Top" Width="174" Height="42" Click="btnConvert_Click"/>
+            <Button x:Name="btnConvert" Content="Button" HorizontalAlignment="Left" Margin="10,555,0,0" VerticalAlignment="Top" Width="174" Height="42" Click="btnConvert_Click"/>
             <Label x:Name="lblState" Content="lblState" HorizontalAlignment="Left" Margin="709,258,0,0" VerticalAlignment="Top" Width="300" Height="28"/>
             <Button x:Name="btnExport" Content="btnExport" HorizontalAlignment="Left" Height="33" Margin="915,555,0,0" VerticalAlignment="Top" Width="94" Click="btnExport_Click"/>
             <Button x:Name="btnDelete" Content="btnDelete" HorizontalAlignment="Left" Margin="793,555,0,0" VerticalAlignment="Top" Width="117" Height="33" Click="btnDelete_Click"/>

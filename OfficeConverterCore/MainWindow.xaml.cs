@@ -35,6 +35,7 @@ namespace OfficeConverter
         bool doExcel = false;
         bool doPPoint = false;
         bool doWordTmpl = false;
+        bool doExcelTmpl = false; 
         string errorFolderEmpty = "";
 
         public MainWindow()
@@ -78,6 +79,7 @@ namespace OfficeConverter
             doExcel = (bool)chkExcel.IsChecked;
             doPPoint = (bool)chkPowerpoint.IsChecked;
             doWordTmpl = (bool)chkWordTmpl.IsChecked; 
+            doExcelTmpl = (bool)chkExcelTmpl.IsChecked;
 
             // Check if the background worker is not already running
             if (!backgroundWorker.IsBusy)
@@ -163,6 +165,8 @@ namespace OfficeConverter
             string[] xlsFiles = null;
             string[] pptFiles = null;
             string[] dotFiles = null; 
+            string[] xltFiles = null;
+
 
             if (doWord)
             {
@@ -177,6 +181,10 @@ namespace OfficeConverter
                 pptFiles = Directory.GetFiles(folderPath, "*.ppt");
             }
             if (doWordTmpl)
+            {
+                dotFiles = Directory.GetFiles(folderPath, "*.dot");
+            }
+            if (doExcelTmpl)
             {
                 dotFiles = Directory.GetFiles(folderPath, "*.dot");
             }
@@ -198,7 +206,10 @@ namespace OfficeConverter
             {
                 combinedFiles.AddRange(dotFiles);
             }
-
+            if (xltFiles != null)
+            {
+                combinedFiles.AddRange(xltFiles);
+            }
             Console.WriteLine($"Processing files in folder: {folderPath}");
 
             /// Create a copy of the collection to avoid modification during iteration
@@ -298,6 +309,9 @@ namespace OfficeConverter
                         case ".dot":
                             ConvertDocToDotx(filePath, doSubfolders, doReplace);
                             break;
+                        case ".xlt":
+                            ConvertXltToXltxAsync(filePath, doSubfolders, doReplace);
+                            break;
 
                         default:
                             // Handle other file types or show an error message
@@ -359,6 +373,65 @@ namespace OfficeConverter
                 KillProcess("EXCEL");
             }
         }
+        private async Task ConvertXltToXltxAsync(string xltFile, bool doSubfolders, bool doReplace)
+        {
+            await Task.Run(() =>
+            {
+                try
+                {
+                    Excel.Application excelApp = new Excel.Application();
+                    excelApp.DisplayAlerts = false;
+
+                    try
+                    {
+                        Excel.Workbook workbook = excelApp.Workbooks.Open(xltFile);
+
+                        string targetFolderPath = "";
+
+                        // Use Dispatcher.Invoke to execute code on the UI thread
+                        Dispatcher.Invoke(() =>
+                        {
+                            targetFolderPath = GetTargetFolderPath(doReplace, doSubfolders, xltFile);
+                        });
+
+                        // Ensure the target folder exists
+                        if (!Directory.Exists(targetFolderPath))
+                        {
+                            Directory.CreateDirectory(targetFolderPath);
+                        }
+
+                        // Construct the new path for the .xltx file
+                        string newXltxPath = Path.Combine(targetFolderPath, Path.ChangeExtension(Path.GetFileName(xltFile), ".xltx"));
+                        workbook.SaveAs(newXltxPath, Excel.XlFileFormat.xlOpenXMLTemplate);
+                        workbook.Close();
+                    }
+                    finally
+                    {
+                        // Quit Excel and release resources
+                        excelApp.Quit();
+                        Marshal.ReleaseComObject(excelApp);
+
+                        // Ensure Excel processes are terminated
+                        KillProcess("EXCEL");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Handle exceptions during conversion
+                    Console.WriteLine($"Error converting {xltFile}: {ex.Message}");
+                }
+            });
+
+            // Update UI on the main thread
+            System.Windows.Application.Current.Dispatcher.Invoke(() =>
+            {
+                combinedFiles.Remove(xltFile);
+                convertedFiles.Add(xltFile);
+
+                DisplayCombinedFiles();
+            });
+        }
+
         private void ConvertPptToPptx(string pptFile, bool doSubfolders, bool doReplace)
         {
             PowerPoint.Application pptApp = new PowerPoint.Application();
