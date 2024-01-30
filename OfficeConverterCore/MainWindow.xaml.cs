@@ -31,7 +31,9 @@ namespace OfficeConverter
         List<string> convertedFiles = new List<string>();
 
         private List<string> logEntries = new List<string>();
-       
+        string msgConversionInProgress = "Conversion in progress";
+        string msgConversionComplete = "Conversion complete";
+
         //Globalvariables
         bool doSubfolders = false;
         bool doReplace = false;
@@ -54,6 +56,9 @@ namespace OfficeConverter
             chkPowerpoint.IsChecked = true;
             cmbLang.Items.Add("EN");
             cmbLang.Items.Add("DE");
+            cmbLang.Items.Add("FR");
+            cmbLang.Items.Add("IT");
+            cmbLang.Items.Add("BN");
             cmbLang.SelectedIndex = 0;
             lstDestFiles.ItemsSource = convertedFiles;
 
@@ -62,7 +67,7 @@ namespace OfficeConverter
             backgroundWorker.DoWork += BackgroundWorker_DoWork;
             backgroundWorker.ProgressChanged += BackgroundWorker_ProgressChanged;
             backgroundWorker.RunWorkerCompleted += BackgroundWorker_RunWorkerCompleted;
-            //lblState.Content = "Ready";
+            lblState.Content = "Ready";
             cancellationTokenSource = new CancellationTokenSource();
         }
         private void UpdateLog(string logEntry)
@@ -87,15 +92,15 @@ namespace OfficeConverter
         private void btnConvert_Click(object sender, RoutedEventArgs e)
         {
             string folderPath = txtSourceFolder.Text;
-            //if (cmbLang.SelectedIndex == 0)
-            //{
-            //    lblState.Content = "Conversion in progress";
-            //}
-            //if (cmbLang.SelectedIndex == 1)
-            //{
-            //    lblState.Content = "Konvertierung läuft";
-            //}
-            
+            if (cmbLang.SelectedIndex == 0)
+            {
+                lblState.Content = "Conversion in progress";
+            }
+            if (cmbLang.SelectedIndex == 1)
+            {
+                lblState.Content = "Konvertierung läuft";
+            }
+
             doSubfolders = (bool)chkSubfolders.IsChecked;
             doReplace = (bool)chkReplace.IsChecked;
             doWord = (bool)chkWord.IsChecked;
@@ -170,7 +175,7 @@ namespace OfficeConverter
                     // Enable buttons after conversion completion
                     UpdateButtonStates(true);
                     grpSourceFiles.Header = "Queue";
-                    MessageBox.Show("Done");
+                    lblState.Content = msgConversionComplete;
                 });
             }
         }
@@ -774,6 +779,8 @@ namespace OfficeConverter
             btnExport.Content = "Export list";
             errorFolderEmpty = "Destination folder is required when 'Replace files' is not selected.";
             btnExportLog.Content = "Save Log";
+            msgConversionInProgress = "Conversion in progress";
+            msgConversionComplete = "Conversion complete";
         }
         private void setLangDE()
         {
@@ -792,7 +799,98 @@ namespace OfficeConverter
             btnExport.Content = "Liste exportieren";
             errorFolderEmpty = "Zielordner darf nicht leer sein, wenn 'Ersetze Dateien' nicht gewählt wurde.";
             btnExportLog.Content = "Log sichern";
+            msgConversionInProgress = "Konvertierung läuft";
+            msgConversionComplete = "Konvertierung abgeschlossen";
         }
+        private void setLangFR()
+        {
+            // Update labels, buttons, and headers in the "Folders" section
+            grpFolders.Header = "Dossiers";
+            lblSouceFolder.Content = "Dossier source";
+            lblDestFolder.Content = "Dossier de destination";
+            btnDestFolder.Content = "Parcourir";
+            btnSourceFolder.Content = "Parcourir";
+            chkReplace.Content = "Remplacer les fichiers (Préserver la structure des sous-dossiers)";
+            chkSubfolders.Content = "Inclure les sous-dossiers";
+
+            // Update labels and headers in the "Files" section
+            grpFiles.Header = "Fichiers";
+            grpSourceFiles.Header = "File d'attente";
+            grpDestFiles.Header = "Terminé";
+
+            // Update button labels in various sections
+            btnConvert.Content = "Convertir";
+            btnDelete.Content = "Supprimer les fichiers";
+            btnExport.Content = "Exporter la liste";
+            btnExportLog.Content = "Enregistrer le journal";
+
+            // Set error message for an empty destination folder
+            errorFolderEmpty = "Le dossier de destination est requis lorsque 'Remplacer les fichiers' n'est pas sélectionné.";
+
+            // Set messages for conversion progress and completion
+            msgConversionInProgress = "Conversion en cours";
+            msgConversionComplete = "Conversion terminée";
+        }
+        private void setLangIT()
+        {
+            // Update labels, buttons, and headers in the "Folders" section
+            grpFolders.Header = "Cartelle";
+            lblSouceFolder.Content = "Cartella di origine";
+            lblDestFolder.Content = "Cartella di destinazione";
+            btnDestFolder.Content = "Sfoglia";
+            btnSourceFolder.Content = "Sfoglia";
+            chkReplace.Content = "Sostituisci i file (Preserva la struttura delle sottocartelle)";
+            chkSubfolders.Content = "Includi sottocartelle";
+
+            // Update labels and headers in the "Files" section
+            grpFiles.Header = "File";
+            grpSourceFiles.Header = "Coda";
+            grpDestFiles.Header = "Completato";
+
+            // Update button labels in various sections
+            btnConvert.Content = "Converti";
+            btnDelete.Content = "Elimina i file";
+            btnExport.Content = "Esporta lista";
+            btnExportLog.Content = "Salva il registro";
+
+            // Set error message for an empty destination folder
+            errorFolderEmpty = "La cartella di destinazione è richiesta quando 'Sostituisci i file' non è selezionato.";
+
+            // Set messages for conversion progress and completion
+            msgConversionInProgress = "Conversione in corso";
+            msgConversionComplete = "Conversione completata";
+        }
+
+        private void setLangBN()
+        {
+            // Update labels, buttons, and headers in the "Folders" section
+            grpFolders.Header = "ফোল্ডার";
+            lblSouceFolder.Content = "উৎস ফোল্ডার";
+            lblDestFolder.Content = "গন্তব্য ফোল্ডার";
+            btnDestFolder.Content = "ব্রাউজ";
+            btnSourceFolder.Content = "ব্রাউজ";
+            chkReplace.Content = "ফাইল প্রতিস্থাপন (সাবফোল্ডারে ফোল্ডার কাঠামো সংরক্ষণ করুন)";
+            chkSubfolders.Content = "সাবফোল্ডারগুলি অন্তর্ভুক্ত করুন";
+
+            // Update labels and headers in the "Files" section
+            grpFiles.Header = "ফাইলগুলি";
+            grpSourceFiles.Header = "কিউ";
+            grpDestFiles.Header = "সম্পূর্ণ";
+
+            // Update button labels in various sections
+            btnConvert.Content = "কনভার্ট";
+            btnDelete.Content = "ফাইলগুলি মুছুন";
+            btnExport.Content = "তালিকা রপ্তানি করুন";
+            btnExportLog.Content = "লগ সংরক্ষণ করুন";
+
+            // Set error message for an empty destination folder
+            errorFolderEmpty = "ফাইলগুলি নির্বাচন করার সময় গন্তব্য ফোল্ডার প্রয়োজন।";
+
+            // Set messages for conversion progress and completion
+            msgConversionInProgress = "কনভার্ট চলছে";
+            msgConversionComplete = "কনভার্ট সম্পূর্ণ";
+        }
+
         private void btnDestFolder_Click(object sender, RoutedEventArgs e)
         {
             using (var folderBrowserDialog = new Forms.FolderBrowserDialog())
@@ -846,6 +944,17 @@ namespace OfficeConverter
                 case 1:
                     setLangDE();
                     break;
+                case 2:
+                    setLangFR();
+                    break;
+
+                case 3:
+                    setLangIT();
+                    break;
+                case 4:
+                    setLangBN();
+                    break;
+
             }
         }
         private void chkReplace_Clicked(object sender, RoutedEventArgs e)

@@ -63,6 +63,7 @@
                 </Grid>
             </GroupBox>
             <Button x:Name="btnExportLog" Content="btnExportLog" HorizontalAlignment="Left" Height="33" Margin="1294,555,0,0" VerticalAlignment="Top" Width="94" Click="btnExport_Click"/>
+            <Label x:Name="lblState" Content="Label" HorizontalAlignment="Left" Margin="189,569,0,0" VerticalAlignment="Top" Width="519"/>
 
         </Grid>
         <Label Content="Office Document Converter" HorizontalAlignment="Left" Margin="10,16,0,0" VerticalAlignment="Top" Width="277" FontSize="20"/>
